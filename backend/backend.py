@@ -56,17 +56,36 @@ CHROMA_DIR = os.path.join(BASE_DIR, "chroma_db")
 COLLECTION_NAME = "chatbot_documents"
 
 
+def get_openai_api_key() -> Optional[str]:
+    """Retrieves OpenAI API key from environment variables or Streamlit secrets."""
+    key = os.getenv("OPENAI_API_KEY")
+    if key and key.strip() and key != "sk-placeholder-key":
+        return key.strip()
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
+            val = st.secrets["OPENAI_API_KEY"]
+            if val and str(val).strip():
+                clean_val = str(val).strip()
+                os.environ["OPENAI_API_KEY"] = clean_val
+                return clean_val
+    except Exception:
+        pass
+    return None
+
+
 def get_chat_model():
     """
     Initializes the chat model.
     Prioritizes OpenAI if OPENAI_API_KEY is available;
-    otherwise gracefully falls back to Ollama or local LLM.
+    otherwise gracefully falls back to Ollama or placeholder initialization.
     """
-    openai_key = os.getenv("OPENAI_API_KEY")
+    openai_key = get_openai_api_key()
     if openai_key:
         return ChatOpenAI(
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             temperature=0.2,
+            api_key=openai_key,
         )
     try:
         from langchain_ollama import ChatOllama
@@ -75,10 +94,11 @@ def get_chat_model():
             temperature=0.2,
         )
     except Exception:
-        # Fallback to standard ChatOpenAI (will prompt for API key if missing)
+        # Fallback with safe placeholder so module import never crashes on startup
         return ChatOpenAI(
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             temperature=0.2,
+            api_key="sk-placeholder-key",
         )
 
 
@@ -86,16 +106,22 @@ def get_embedding_model():
     """
     Initializes embedding model.
     Defaults to OpenAI text-embedding-3-small if key is present,
-    otherwise falls back to OllamaEmbeddings.
+    otherwise falls back to OllamaEmbeddings or safe placeholder.
     """
-    openai_key = os.getenv("OPENAI_API_KEY")
+    openai_key = get_openai_api_key()
     if openai_key:
-        return OpenAIEmbeddings(model="text-embedding-3-small")
+        return OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            api_key=openai_key,
+        )
     try:
         from langchain_ollama import OllamaEmbeddings
         return OllamaEmbeddings(model=os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"))
     except Exception:
-        return OpenAIEmbeddings(model="text-embedding-3-small")
+        return OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            api_key="sk-placeholder-key",
+        )
 
 
 

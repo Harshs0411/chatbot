@@ -47,6 +47,7 @@ from backend.backend import (
         update_thread_title,
         delete_thread,
         get_chat_model,
+        get_openai_api_key,
 )
 # except ImportError:
 #     from Backend.backend import (
@@ -347,10 +348,29 @@ for i, message in enumerate(st.session_state["message_history"]):
                     st.markdown(f"- **Answer Relevance:** {res.get('answer_relevance_reasoning', '')}")
                     st.markdown(f"- **Context Precision:** {res.get('context_precision_reasoning', '')}")
 
+# Check for active OpenAI API key
+active_key = get_openai_api_key()
+if not active_key:
+    st.warning(
+        "🔑 **OpenAI API Key Not Found**\n\n"
+        "To activate the agent:\n"
+        "- **In Streamlit Cloud**: Click **Manage app** (bottom-right) &rarr; **Settings** &rarr; **Secrets** &rarr; add `OPENAI_API_KEY = \"sk-...\"`\n"
+        "- **Or enter it below for this browser session:**"
+    )
+    temp_key = st.text_input("Enter OpenAI API Key:", type="password", key="session_key_entry")
+    if temp_key and temp_key.strip():
+        os.environ["OPENAI_API_KEY"] = temp_key.strip()
+        st.success("API Key loaded successfully!")
+        st.rerun()
+
 # User Input Box
 user_prompt = st.chat_input("Ask a question, request calculations, or inquire about uploaded PDFs...")
 
 if user_prompt:
+    if not get_openai_api_key():
+        st.error("⚠️ Please configure your OPENAI_API_KEY in Streamlit Secrets or in the box above to run queries.")
+        st.stop()
+
     # Append and render user message immediately
     st.session_state["message_history"].append({"role": "user", "content": user_prompt})
     with st.chat_message("user"):
