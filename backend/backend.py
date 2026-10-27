@@ -32,7 +32,13 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.checkpoint.sqlite import SqliteSaver
+try:
+    from langgraph.checkpoint.sqlite import SqliteSaver
+except ImportError:
+    try:
+        from langgraph_checkpoint_sqlite import SqliteSaver
+    except ImportError:
+        from langgraph.checkpoint.memory import MemorySaver as SqliteSaver
 
 # ---------------------------------------------------------------------------
 # 1. Environment & Model Configuration
@@ -470,9 +476,14 @@ graph.add_edge(START, "chatbot")
 graph.add_conditional_edges("chatbot", tools_condition)
 graph.add_edge("tools", "chatbot")
 
-# Persistent checkpointing with SqliteSaver
-checkpoint_conn = sqlite3.connect(DATABASE_NAME, check_same_thread=False)
-checkpointer = SqliteSaver(checkpoint_conn)
-checkpointer.setup()
+# Persistent checkpointing with SqliteSaver (with MemorySaver fallback)
+try:
+    checkpoint_conn = sqlite3.connect(DATABASE_NAME, check_same_thread=False)
+    checkpointer = SqliteSaver(checkpoint_conn)
+    if hasattr(checkpointer, "setup"):
+        checkpointer.setup()
+except Exception:
+    from langgraph.checkpoint.memory import MemorySaver
+    checkpointer = MemorySaver()
 
 workflow = graph.compile(checkpointer=checkpointer)
