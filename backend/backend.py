@@ -447,7 +447,26 @@ def rag_tool(query: str, config: RunnableConfig) -> dict:
     }
 
 
-search_tool = DuckDuckGoSearchRun(name="web_search", region="us-en")
+# Web Search Tool (DuckDuckGo / DDGS with resilient fallback)
+try:
+    search_tool = DuckDuckGoSearchRun(name="web_search", region="us-en")
+except Exception:
+    @tool
+    def search_tool(query: str) -> str:
+        """Search the web for real-time information, recent news, or current events."""
+        try:
+            from ddgs import DDGS
+            with DDGS() as ddgs:
+                results = list(ddgs.text(query, max_results=3))
+                return "\n".join(r.get("body", "") for r in results)
+        except Exception:
+            try:
+                from duckduckgo_search import DDGS
+                with DDGS() as ddgs:
+                    results = list(ddgs.text(query, max_results=3))
+                    return "\n".join(r.get("body", "") for r in results)
+            except Exception:
+                return f"Web search is temporarily unavailable for query: '{query}'."
 
 # Dynamic MCP Tools integration (Model Context Protocol)
 try:

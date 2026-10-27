@@ -15,6 +15,7 @@ pypdf>=4.0.0
 
 # Search & Tools
 duckduckgo-search>=6.0.0
+ddgs>=9.0.0
 
 # Frontend & Utilities
 streamlit>=1.35.0
