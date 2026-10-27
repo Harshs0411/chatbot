@@ -1,0 +1,30 @@
+# Git and IDE metadata
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+.DS_Store
+
+# Virtual environments and caches
+__pycache__
+*/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+conda-env/
+
+# Local databases and vector store storage
+chatbot.db
+chroma_db/
+.deepeval/
+
+# Local secrets and temporary testing files
+.env
+*.log
+dummy_test.pdf
+test_tel_dir/

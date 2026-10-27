@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "local_server": {
+      "command": "/opt/anaconda3/bin/python",
+      "args": [
+        "/Users/harshsinghal/Desktop/llm/Chatbot/mcp_server.py"
+      ]
+    }
+  }
+}
